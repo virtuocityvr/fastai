@@ -72,8 +72,8 @@ def download_photos(source_photo_list, photo_field_name):
     # block until all tasks are done
     q.join()
 
-def export_csv(source_photo_list, photo_field_name, category_name, output_file):
-    with open(output_file, 'a') as csvfile:
+def export_csv(source_photo_list, photo_field_name, category_name, output_file, photo_folder):
+    with open(output_file, 'w') as csvfile:
         filewriter = csv.writer(csvfile, delimiter=',',
                                 quotechar='|', quoting=csv.QUOTE_MINIMAL)
         filewriter.writerow(['id', category_name])
@@ -83,7 +83,9 @@ def export_csv(source_photo_list, photo_field_name, category_name, output_file):
             category = photo[category_name]
             if category is None:
                 category = "None"
-            filewriter.writerow([name, category])
+            photo_file = photo_folder + name
+            if os.path.exists(photo_file):
+                filewriter.writerow([name, category])
 
 
 if __name__ == "__main__":
@@ -91,7 +93,8 @@ if __name__ == "__main__":
 
     photo_list = load_photo_list_from_file("data/photos_data.json")
 
-    export_csv(photo_list, "stills", "type", "/tmp/photos/stills_by_scene_type.csv" )
-    export_csv(photo_list, "stills", "filter", "/tmp/photos/stills_by_filter.csv" )
-    download_photos(photo_list, "stills")
+
+    # download_photos(photo_list, "stills")
+    export_csv(photo_list, "stills", "type", "/tmp/photos/stills_by_scene_type.csv", "/tmp/photos/stills_resized/")
+    export_csv(photo_list, "stills", "filter", "/tmp/photos/stills_by_filter.csv", "/tmp/photos/stills_resized/")
     # download_photos(photo_list, "photoSpheres")
