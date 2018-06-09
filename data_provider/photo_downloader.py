@@ -1,0 +1,97 @@
+import os
+import sys
+import libs.S3Client as S3Client
+import logging
+import json
+import csv
+import threading
+import queue
+
+file_dir = os.path.dirname(__file__)
+sys.path.append(file_dir)
+q = queue.Queue(10)
+
+def setup_logger():
+    global logger
+    formatter = logging.Formatter(fmt='%(asctime)s %(name)s %(levelname)-8s %(message)s',
+                                  datefmt='%Y-%m-%d %H:%M:%S')
+    screen_handler = logging.StreamHandler(stream=sys.stdout)
+    screen_handler.setFormatter(formatter)
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(screen_handler)
+
+
+setup_logger()
+
+
+class PhotoList:
+
+    def __init__(self, input_json):
+        self.json = input_json
+        logger.debug("found " + str(len(input_json["stills"])) + " stills")
+        logger.debug("found " + str(len(input_json["photoSpheres"])) + " photoSpheres")
+
+
+
+
+def load_json_from_file(filename):
+    with open(filename) as json_file:
+        return json.load(json_file)
+
+
+def load_photo_list_from_file(filename):
+    with open(filename) as json_file:
+        return PhotoList(json.load(json_file))
+
+
+def download_photo():
+    while True:
+        item = q.get()
+        if item is None:
+            break
+        item[0].download_photo(item[1])
+        q.task_done()
+
+
+def download_photos(source_photo_list, photo_field_name):
+    still_directory = "/tmp/photos/"+photo_field_name+"/"
+    if not os.path.exists(still_directory):
+        os.makedirs(still_directory)
+    s3_client = S3Client.S3Client(still_directory)
+
+    threads = []
+    for i in range(10):
+        t = threading.Thread(target=download_photo)
+        t.start()
+        threads.append(t)
+
+    for photo in source_photo_list.json[photo_field_name]:
+        q.put([s3_client, photo])
+
+    # block until all tasks are done
+    q.join()
+
+def export_csv(source_photo_list, photo_field_name, category_name, output_file):
+    with open(output_file, 'a') as csvfile:
+        filewriter = csv.writer(csvfile, delimiter=',',
+                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        filewriter.writerow(['id', category_name])
+
+        for photo in source_photo_list.json[photo_field_name]:
+            name = photo["media"]["path"]
+            category = photo[category_name]
+            if category is None:
+                category = "None"
+            filewriter.writerow([name, category])
+
+
+if __name__ == "__main__":
+    import sys
+
+    photo_list = load_photo_list_from_file("data/photos_data.json")
+
+    export_csv(photo_list, "stills", "type", "/tmp/photos/stills_by_scene_type.csv" )
+    export_csv(photo_list, "stills", "filter", "/tmp/photos/stills_by_filter.csv" )
+    download_photos(photo_list, "stills")
+    # download_photos(photo_list, "photoSpheres")
