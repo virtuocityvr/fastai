@@ -6,6 +6,7 @@ import json
 import csv
 import threading
 import queue
+import shutil
 
 file_dir = os.path.dirname(__file__)
 sys.path.append(file_dir)
@@ -87,14 +88,24 @@ def export_csv(source_photo_list, photo_field_name, category_name, output_file, 
             if os.path.exists(photo_file):
                 filewriter.writerow([name, category])
 
+def move_files_in_csv(cvs_file, sourceFolder, target_folder):
+    with open(cvs_file, 'r') as f:
+        contents = f.readlines()
+        for line in contents:
+            file_name = line.split(",")[0]
+            photo_file = sourceFolder+ file_name;
+            if os.path.exists(photo_file):
+                shutil.copy2(photo_file, target_folder)
 
 if __name__ == "__main__":
     import sys
 
-    photo_list = load_photo_list_from_file("data/photos_data.json")
+    # photo_list = load_photo_list_from_file("data/photos_data.json")
 
-
+    move_files_in_csv("/Users/binlin/playground/fastai/experiments/still_photos/stills_by_filter.csv",
+                      "/tmp/photos/stills_resized/",
+                      "/tmp/photos/stills_resized_filtered/")
     # download_photos(photo_list, "stills")
-    export_csv(photo_list, "stills", "type", "/tmp/photos/stills_by_scene_type.csv", "/tmp/photos/stills_resized/")
-    export_csv(photo_list, "stills", "filter", "/tmp/photos/stills_by_filter.csv", "/tmp/photos/stills_resized/")
+    # export_csv(photo_list, "stills", "type", "/tmp/photos/stills_by_scene_type.csv", "/tmp/photos/stills_resized/")
+    # export_csv(photo_list, "stills", "filter", "/tmp/photos/stills_by_filter.csv", "/tmp/photos/stills_resized/")
     # download_photos(photo_list, "photoSpheres")
