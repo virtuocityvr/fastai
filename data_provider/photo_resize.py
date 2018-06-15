@@ -24,17 +24,17 @@ def resizeImage(infile, dir, output_dir, size=(512, 512)):
             print("cannot reduce image for ", infile)
 
 
-if __name__ == "__main__":
-    input_dir = "/tmp/photos/stills"
-
-    output_dir = input_dir + "_resized"
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
-
-    listdir = os.listdir(input_dir)
-    count = 0;
-    total = len(listdir);
-    for file in listdir:
-        resizeImage(file, input_dir, output_dir=output_dir)
-        count += 1
-        print("resized %s of %s - %s" % (count, total, file))
+# if __name__ == "__main__":
+#     input_dir = "/tmp/photos/photoSpheres"
+#
+#     output_dir = input_dir + "_resized"
+#     if not os.path.exists(output_dir):
+#         os.mkdir(output_dir)
+#
+#     listdir = os.listdir(input_dir)
+#     count = 0;
+#     total = len(listdir);
+#     for file in listdir:
+#         resizeImage(file, input_dir, output_dir=output_dir)
+#         count += 1
+#         print("resized %s of %s - %s" % (count, total, file))
