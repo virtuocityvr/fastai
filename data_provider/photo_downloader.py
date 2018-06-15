@@ -7,6 +7,7 @@ import csv
 import threading
 import queue
 import shutil
+from photo_resize import resizeImage
 
 file_dir = os.path.dirname(__file__)
 sys.path.append(file_dir)
@@ -55,11 +56,11 @@ def download_photo():
         q.task_done()
 
 
-def download_photos(source_photo_list, photo_field_name):
-    still_directory = "/tmp/photos/"+photo_field_name+"/"
-    if not os.path.exists(still_directory):
-        os.makedirs(still_directory)
-    s3_client = S3Client.S3Client(still_directory)
+def download_photos(source_photo_list,  photo_field_name, target_folder):
+
+    if not os.path.exists(target_folder):
+        os.makedirs(target_folder)
+    s3_client = S3Client.S3Client(target_folder)
 
     threads = []
     for i in range(10):
@@ -89,6 +90,8 @@ def export_csv(source_photo_list, photo_field_name, category_name, output_file, 
                 filewriter.writerow([name, category])
 
 def move_files_in_csv(cvs_file, sourceFolder, target_folder):
+    if not os.path.exists(target_folder):
+        os.mkdir(target_folder)
     with open(cvs_file, 'r') as f:
         contents = f.readlines()
         for line in contents:
@@ -97,15 +100,51 @@ def move_files_in_csv(cvs_file, sourceFolder, target_folder):
             if os.path.exists(photo_file):
                 shutil.copy2(photo_file, target_folder)
 
+def move_files_in_csv_no_none(cvs_file, sourceFolder, target_folder):
+    if not os.path.exists(target_folder):
+        os.mkdir(target_folder)
+    with open(cvs_file, 'r') as f:
+        contents = f.readlines()
+        for line in contents:
+            file_name = line.split(",")[0]
+            filter_name = line.split(",")[1].rstrip()
+            photo_file = sourceFolder+ file_name;
+            if os.path.exists(photo_file) and filter_name.lower() != "none":
+                shutil.copy2(photo_file, target_folder)
+
+def resize_photos(input_dir, output_dir):
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+
+    listdir = os.listdir(input_dir)
+    count = 0;
+    total = len(listdir);
+    for file in listdir:
+        resizeImage(file, input_dir, output_dir=output_dir)
+        count += 1
+        print("resized %s of %s - %s" % (count, total, file))
+
 if __name__ == "__main__":
     import sys
 
-    # photo_list = load_photo_list_from_file("data/photos_data.json")
+    photo_list = load_photo_list_from_file("data/photos_data.json")
 
-    move_files_in_csv("/Users/binlin/playground/fastai/experiments/still_photos/stills_by_filter.csv",
+    # move_files_in_csv("/Users/binlin/playground/fastai/experiments/still_photos/photoSpheres_by_filter_clearned.csv",
+    #                   "/tmp/photos/photoSpheres_resized/",
+    #                   "/tmp/photos/photoSpheres_resized_filtered/")
+
+    move_files_in_csv_no_none("/Users/binlin/playground/fastai/experiments/still_photos/photoSpheres_by_filter_clearned.csv",
+                      "/tmp/photos/photoSpheres_resized/",
+                      "/tmp/photos/photoSpheres_resized_filtered_no_none/")
+
+    move_files_in_csv_no_none("/Users/binlin/playground/fastai/experiments/still_photos/stills_by_filter.csv",
                       "/tmp/photos/stills_resized/",
-                      "/tmp/photos/stills_resized_filtered/")
+                      "/tmp/photos/stills_resized_filtered_no_none/")
+
     # download_photos(photo_list, "stills")
     # export_csv(photo_list, "stills", "type", "/tmp/photos/stills_by_scene_type.csv", "/tmp/photos/stills_resized/")
     # export_csv(photo_list, "stills", "filter", "/tmp/photos/stills_by_filter.csv", "/tmp/photos/stills_resized/")
-    # download_photos(photo_list, "photoSpheres")
+    # download_photos(photo_list, "photoSpheres", "/tmp/photos/photoSpheres/")
+    # resize_photos("/tmp/photos/photoSpheres/", "/tmp/photos/photoSpheres_resized/")
+    # export_csv(photo_list, "photoSpheres", "type", "/tmp/photos/photoSpheres_by_scene_type.csv", "/tmp/photos/photoSpheres_resized/")
+    # export_csv(photo_list, "photoSpheres", "filter", "/tmp/photos/photoSpheres_by_filter.csv", "/tmp/photos/photoSpheres_resized/")
