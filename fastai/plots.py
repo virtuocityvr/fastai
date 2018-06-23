@@ -109,7 +109,7 @@ class ImageModelResults():
         # if there are any samples to be displayed
         if len(idxs) > 0:
             imgs = np.stack([self.ds[x][0] for x in idxs])
-            title_probs = [self.probs[x,y] for x in idxs]
+            title_probs = [str(x)+"_"+str(self.probs[x,y]) for x in idxs]
 
             return plots(self.ds.denorm(imgs), rows=1, titles=title_probs)
         # if idxs is empty return false
